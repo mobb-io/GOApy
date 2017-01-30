@@ -1,5 +1,5 @@
 from Goap.Action import Action
-from Goap.World import World
+from Goap.State import World
 from Goap.Planner import Planner
 
 world = World(facts=['vpc_doesnt_exist'])

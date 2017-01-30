@@ -1,0 +1,36 @@
+CreateVPC:
+        name: "CreateVPC"
+        pre_conditions: {'vpc': False, 'db': False, 'app': False}
+        effects: {'vpc': True, 'db': False, 'app': False}
+CreateDB:
+        name: 'CreateDB'
+        pre_conditions: {'vpc': True, 'db': False, 'app': False}
+        effects: {'vpc': True, 'db': True, 'app': False}
+StopDB:
+        name: 'StopDB'
+        pre_conditions: {'vpc': True, 'db': 'started', 'app': False}
+        effects: {'vpc': True, 'db': 'stopped', 'app': False}
+StartDB:
+        name: 'StartDB',
+        pre_conditions: {'vpc': True, 'db': 'stopped', 'app': False},
+        effects: {'vpc': True, 'db': 'started', 'app': False}
+DestroyDB:
+        name: 'DestroyDB',
+        pre_conditions: {'vpc': True, 'db': 'not_health', 'app': False},
+        effects: {'vpc': True, 'db': False, 'app': False}
+CreateApp:
+        name: 'CreateApp',
+        pre_conditions: {'vpc': True, 'db': True, 'app': False},
+        effects: {'vpc': True, 'db': True, 'app': True}
+StartApp:
+        name: 'StartApp',
+        pre_conditions: {'vpc': True, 'db': True, 'app': 'stopped'},
+        effects: {'vpc': True, 'db': True, 'app': 'started'}
+StopApp:
+        name: 'StopApp',
+        pre_conditions: {'vpc': True, 'db': True, 'app': 'started'},
+        effects: {'vpc': True, 'db': True, 'app': 'stopped'}
+DestroyApp:
+        name: 'DestroyApp',
+        pre_conditions: {'vpc': True, 'db': True, 'app': 'not_health'},
+        effects: {'vpc': True, 'db': True, 'app': False}

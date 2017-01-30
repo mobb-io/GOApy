@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Diagram>
+  <ID>Python</ID>
+  <OriginalElement>#/Users/leo/PycharmProjects/Goap/Goap/StateMachine.py</OriginalElement>
+  <nodes>
+    <node x="142.0" y="754.0">Goap.StateMachine.StateMachine</node>
+    <node x="0.0" y="146.0">object</node>
+    <node x="268.5" y="0.0">collections.Hashable</node>
+  </nodes>
+  <notes />
+  <edges>
+    <edge source="Goap.StateMachine.StateMachine" target="object">
+      <point x="0.0" y="-136.0" />
+      <point x="0.0" y="279.0" />
+    </edge>
+    <edge source="object" target="collections.Hashable">
+      <point x="0.0" y="-279.0" />
+      <point x="0.0" y="48.0" />
+    </edge>
+  </edges>
+  <settings layout="Hierarchic Group" zoom="1.0" x="119.5" y="-66.0" />
+  <SelectedNodes>
+    <node>collections.Hashable</node>
+  </SelectedNodes>
+  <Categories>
+    <Category>Fields</Category>
+    <Category>Inner Classes</Category>
+    <Category>Methods</Category>
+  </Categories>
+</Diagram>
+

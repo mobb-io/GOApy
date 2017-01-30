@@ -1,8 +1,9 @@
-from Goap.Action import Actions
-from Goap.StateMachine import StateMachine
 from random import choice
 from time import sleep
 from datetime import datetime
+from collections import deque
+from Goap.Action import Actions
+from Goap.StateMachine import StateMachine
 import boto3
 
 
@@ -120,22 +121,19 @@ class Agent:
     STD_STATES = {
         'obliterate': {'vpc': False, 'db': False, 'app': False},
         'new': {'vpc': True, 'db': True, 'app': True},
-        'inconsistent': {'vpc': 'inconsistent', 'db': 'inconsistent', 'app': 'inconsistent'}
+        'inconsistent': {'vpc': 'inconsistent', 'db': 'inconsistent', 'app': 'inconsistent'},
+        'monitoring': {'vpc': 'monitoring', 'db': 'monitoring', 'app': 'monitoring'}
     }
 
-    def __init__(self, name: str, actions: Actions, init_state: dict={}, goal: dict={}) -> object:
+    def __init__(self, name: str, priorities: list, actions: Actions, init_state: dict={}, goal: dict={}) -> object:
         """
 
         :param name:
         :param actions:
         """
         self.name = name
-        self.priorities = enumerate(
-            [
-                {'vpc': True, 'db': True, 'app': True},
-                {'vpc': True, 'db': True, 'app': False}
-            ]
-        )
+        self.priorities = deque()
+        [self.priorities.append(priority)for priority in priorities]
         # world_facts act as a working memory, default value is {}
         self.world_facts = init_state
         self.sensors = Sensors()
@@ -162,29 +160,43 @@ class Agent:
         """
         self.goal = goal
 
-    def run(self, goal: dict={'vpc': True, 'db': True, 'app': True}):
+    def run(self):
         """ start the AA
 
         :return:
         """
-        self.set_goal(goal)
+        self.set_goal(self.priorities[0])
         while True:
+            actions_result = []
             # update all sensors
             self.full_scan()
             print('\n\n\n###\n###\n###')
             print('Starting {}'.format(datetime.now()))
             print('Goal: {}'.format(self.goal))
             print('Current World State: {}'.format(self.world_facts))
+            print('Nodes: {}'.format(self.fsm.get_graph_network_nodes()))
+            print('Edges: {}'.format(self.fsm.get_graph_network_edges()))
 
-            if self.world_facts != self.goal:
-                actions_result = self.fsm.start(init_state=self.world_facts, end_state=self.goal)
+            """
+            if self.world_facts == self.goal:
+                self.set_goal(self.priorities[1])
+                # actions_result = self.fsm.start(init_state=self.world_facts, end_state=self.goal)
+
                 if not actions_result:
-                    print('[ERROR]: Unknown state\n[ERROR]: OBLITERATE\n{}')
+                    print('[ERROR]: Inconsistent state, the environment need to be recreated')
                     self.world_facts = self.STD_STATES['inconsistent']
-                    actions_result = self.fsm.start(init_state=self.world_facts, end_state=self.STD_STATES['obliterate'])
+                    self.goal = self.STD_STATES['obliterate']
+                    # actions_result = self.fsm.start(init_state=self.world_facts, end_state=self.goal)
+                    print(actions_result)
+                    print(self.fsm.get_transitions())
+                """
 
-                print('[INFO] Plan executed: {}'.format(actions_result))
+            actions_result = self.fsm.start(init_state=self.world_facts, end_state=self.goal)
+            if len(actions_result) <= 0:
+                print('[WARN] No plan to execute')
 
+            print('Action Plan: {}'.format(self.fsm.get_transitions()))
+            print('[INFO] Plan execution result: {}'.format(actions_result))
             print('Sleeping 7 sec from {}'.format(datetime.now()))
             sleep(7)
 
@@ -249,7 +261,17 @@ if __name__ == '__main__':
         pre_conditions={'vpc': 'inconsistent', 'db': 'inconsistent', 'app': 'inconsistent'},
         effects={'vpc': False, 'db': False, 'app': False}
     )
+    # monitoring mode
+    actions.add_action(
+        name='Monitoring',
+        pre_conditions={'vpc': True, 'db': True, 'app': True},
+        effects={'vpc': 'monitoring', 'db': 'monitoring', 'app': 'monitoring'}
+    )
     init_state = {'vpc': False, 'app': False, 'db': False}
     init_goal = {'vpc': True, 'db': True, 'app': True}
-    ai_cloud_builder = Agent(name='CloudBuilder', actions=actions)
+    PRIORITIES = [
+        (1, {'vpc': True, 'db': True, 'app': True}),
+        (2, {'vpc': 'monitoring', 'db': 'monitoring', 'app': 'monitoring'}),
+    ]
+    ai_cloud_builder = Agent(name='CloudBuilder', actions=actions, priorities=PRIORITIES)
     ai_cloud_builder.run()

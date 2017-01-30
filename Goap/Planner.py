@@ -120,7 +120,7 @@ class Planner:
         # set nodes and edges and formulate plan
         self.set_nodes()
         self.set_edges()
-        self.plan(init_state=init_state, goal=goal)
+        # self.plan(init_state=init_state, goal=goal)
 
     def set_nodes(self):
         """
@@ -168,17 +168,40 @@ class Planner:
         # find start and final node
         for node in self.nodes:
             if node[1] == self.init_state:
-                start_node = node[0]
-            elif self.goal == node[1]:
+                start_node = node[0]  # Get node position
+
+            if self.goal == node[1]:
                 final_node = node[0]
-        # Try to generate plan, if there' no plan return False
+            # elif self.goal == node[1]:
+            #    final_node = node[0]
+        """
+
+        if start_node is None:
+            self.action_plan = [{'ERROR': 'No plan from start node'}]
+        elif start_node == final_node:
+            self.action_plan = [{'ERROR': 'No actions are required'}]
+        elif final_node is None:
+            self.action_plan = [{'ERROR': 'Goal not found on actions effects'}]
+        else:
+
+            # Try to generate plan, if there' no plan return []
+            try:
+                self.path = nx.astar_path(self.graph, start_node, final_node)
+                self.action_plan = self.graph.edges(self.path, data=True)
+            except KeyError as e:
+                print('[ERROR] There is no node to start planning {}'.format(e))
+                self.action_plan = []
+        """
+        # Try to generate plan, if there' no plan return []
         try:
             self.path = nx.astar_path(self.graph, start_node, final_node)
             self.action_plan = self.graph.edges(self.path, data=True)
-            return self.action_plan
         except KeyError as e:
-            print('[ERROR] There is no node to start planning {}'.format(e))
-            return False
+            print('[ERROR] Cannot starting a plan from node {}'.format(e))
+            self.path = []
+            self.action_plan = []
+
+        return self.action_plan
 
     def plot_graph(self, label_nodes: bool=True, label_edges: bool=True):
         import matplotlib.pyplot as plt
@@ -245,7 +268,7 @@ if __name__ == '__main__':
     )
     actions.add_action(
         name='StopApp',
-        pre_conditions={'vpc': True, 'db': True, 'app': 'started'},
+        pre_conditions={'vpc': True, 'db': True, 'app': True},
         effects={'vpc': True, 'db': True, 'app': 'stopped'}
     )
     actions.add_action(
@@ -259,29 +282,57 @@ if __name__ == '__main__':
         pre_conditions={'vpc': 'inconsistent', 'db': 'inconsistent', 'app': 'inconsistent'},
         effects={'vpc': False, 'db': False, 'app': False}
     )
+    # monitoring mode
+    actions.add_action(
+        name='Monitoring',
+        pre_conditions={'vpc': True, 'db': True, 'app': True},
+        effects={'vpc': 'monitoring', 'db': 'monitoring', 'app': 'monitoring'}
+    )
     planner = Planner(actions=actions)
     print('Graph.Nodes: ', planner.graph.nodes(data=True))
     print('Graph.Edges: ', planner.graph.edges(data=True))
-    print('Action sequence')
-    pprint(planner.action_plan)
-    # Plan again
+    # Planning...
     plan = planner.plan(
         init_state={'vpc': False, 'db': False, 'app': False},
         goal={'vpc': True, 'db': True, 'app': True}
     )
+    # Planning again...
     plan = planner.plan(
-        init_state={'vpc': True, 'db': False, 'app': False}, goal={'vpc': True, 'db': True, 'app': True})
-    print('PATH: ', planner.path)
-    print('Action plan: ')
-    pprint(plan, indent=2)
-
-    pprint('Monitor')
-    plan = planner.plan(
-        init_state={'vpc_checked': False, 'db_check': False, 'app_checked': False},
-        goal={'vpc_checked': True, 'db_check': True, 'app_checked': True}
+        init_state={'vpc': True, 'db': False, 'app': False},
+        goal={'vpc': True, 'db': True, 'app': True}
     )
     print('PATH: ', planner.path)
     print('Action plan: ')
     pprint(plan, indent=2)
-    print(type(planner.plot_graph()))
+    # Invalid state
+    pprint('Invalid state scenario')
+    world_state = {'vpc': True, 'db': False, 'app': True}
+    goal = {'vpc': True, 'db': True, 'app': True}
+    plan = planner.plan(
+        init_state=world_state,
+        goal=goal
+    )
+    print('PATH: ', planner.path)
+    pprint(plan, indent=2)
+    # Monitoring state
+    pprint('Monitoring state scenario')
+    world_state = {'vpc': True, 'db': True, 'app': True}
+    goal = {'vpc': 'monitoring', 'db': 'monitoring', 'app': 'monitoring'}
+    plan = planner.plan(
+        init_state=world_state,
+        goal=goal
+    )
+    print('PATH: ', planner.path)
+    pprint(plan, indent=2)
+    # Stopped state
+    pprint('Stopped state scenario')
+    world_state = {'vpc': True, 'db': True, 'app': True}
+    goal = {'vpc': True, 'db': True, 'app': 'stopped'}
+    plan = planner.plan(
+        init_state=world_state,
+        goal=goal
+    )
+    print('PATH: ', planner.path)
+    pprint(plan, indent=2)
+    # print(type(planner.plot_graph()))
 
