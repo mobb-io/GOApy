@@ -89,6 +89,8 @@ class ShellCommand:
             stdout, stderr = proc.communicate(timeout=30)
             returncode = proc.returncode
             self.response = ShellCommandResponse(name=self.name, output=stdout, error=stderr, return_code=returncode)
+            proc.kill()
+            return self.response
         except TimeoutError as e:
             proc.kill()
             raise('{}'.format(e))

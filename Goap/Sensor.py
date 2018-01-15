@@ -2,6 +2,8 @@ import subprocess
 import inspect
 import json
 import boto3
+import asyncio
+from rx import Observable, Observer
 
 from Goap.Errors import *
 
@@ -247,9 +249,46 @@ class Sensors:
         else:
             raise SensorAlreadyInCollectionError
 
-    def exec_all(self) -> list:
-        responses = [s.exec() for s in self.sensors]
+    async def exec_all(self, interval: float=0.5) -> list:
+        """ execute sensors asynchronously
+
+        :return: return a list of sensor's responses
+        :rtype: list
+        """
+        async def async_exec_list(s):
+            """ exec s and wait interval between execs
+
+            :param s: sensor object to be called
+            :param interval: float number interval between execution
+            :return:
+            """
+            await asyncio.sleep(interval)
+            return s.exec()
+
+        async def async_responses():
+            responses = [await async_exec_list(s) for s in self.sensors]
+            return responses
+
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(async_responses())
+        loop.close()
+
         return responses
+
+
+class ReactiveSensors(Observer):
+
+    def __init__(self):
+        self.sensors_responses = Observable.from_(self.sensors).subscribe(SensorsObserver())
+
+    def on_next(self, sensor):
+        sensor.exec()
+
+    def on_error(self, e):
+        return 'Error on sensor {}'.format(e)
+
+    def on_completed(self):
+        return 'Sensors interaction completed'
 
 
 if __name__ == '__main__':
