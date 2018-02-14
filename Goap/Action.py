@@ -36,7 +36,7 @@ class ShellCommandResponse:
         if self.return_code == 0 and self.__check_response():
             return {'return_code': self.return_code, 'output': str(self.output).replace('\n', '').replace('\t', '')}
         elif self.return_code == 0 and not self.__check_response():
-            return {'return_code': self.return_code, 'error': str('False')}
+            return {'return_code': self.return_code, 'output': str('Empty')}
         else:
             return {'return_code': self.return_code, 'error': str(self.error).replace('\n', '').replace('\t', '')}
 
@@ -94,8 +94,6 @@ class ShellCommand:
         except TimeoutError as e:
             proc.kill()
             raise('{}'.format(e))
-
-        return self.response
 
 
 class AWSCommandResponse:
